@@ -582,6 +582,17 @@ class AdminXmlImportControllerCore extends AdminController
      */
     public function renderForm()
     {
+	// Add the snippet for XML import templates
+    if (Tools::isSubmit('submitXmlImport')) {
+        // Load and display the relevant template based on XML import
+        $this->context->smarty->assign([
+            'xml_fields' => $this->getXmlFields(),
+            'ps_fields' => $this->getPrestashopFields(),
+            'mapping_template' => $this->getMappingTemplate(),
+        ]);
+
+        return $this->context->smarty->fetch($this->template_dir . 'xml_import.tpl');
+    }
         // If import was executed - collect errors or success message
         // and send them to the migrated controller.
         if ($this->importExecuted) {
