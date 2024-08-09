@@ -91,7 +91,42 @@ class AdminXmlImportControllerCore extends AdminController
      * @var bool
      */
     private $importExecuted = false;
+	
+    // Insert the downloadXmlFile method here
+    private function downloadXmlFile($url)
+    {
+        // Validate the URL to ensure it's properly formatted
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            $this->errors[] = $this->trans('Invalid XML URL provided.');
+            return false;
+        }
 
+        // Fetch the XML content from the URL
+        $xmlContent = file_get_contents($url);
+        if ($xmlContent === false) {
+            $this->errors[] = $this->trans('Failed to download the XML file from the provided URL.');
+            return false;
+        }
+
+        // Define a local path to save the XML file
+        $xmlFileName = basename($url);  // Extract the file name from the URL
+        $xmlFilePath = _PS_MODULE_DIR_ . 'xmlimport/xml_files/' . $xmlFileName;
+
+        // Create the directory if it doesn't exist
+        if (!is_dir(dirname($xmlFilePath))) {
+            mkdir(dirname($xmlFilePath), 0755, true);
+        }
+
+        // Save the XML content to a local file
+        $result = file_put_contents($xmlFilePath, $xmlContent);
+        if ($result === false) {
+            $this->errors[] = $this->trans('Failed to save the downloaded XML file.');
+            return false;
+        }
+
+        // Return the path to the saved file
+        return $xmlFilePath;
+    }
     public function __construct()
     {
         $this->bootstrap = true;
