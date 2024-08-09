@@ -3928,10 +3928,26 @@ class AdminXmlImportControllerCore extends AdminController
 
             return;
         }
-
+//Existing CSV import processing
         if (Tools::isSubmit('import')) {
             $this->importExecuted = true;
             $this->importByGroups();
+ // Add the XML processing snippet here
+    if (Tools::isSubmit('submitXmlImport')) {  // Ensure this is for your XML import submission
+        $xmlFeedUrl = Tools::getValue('xmlFeedUrl');
+        $mapping = Tools::getValue('mapping');
+
+        // Download the XML file (assuming this method exists in your controller)
+        $xmlFilePath = $this->downloadXmlFile($xmlFeedUrl);
+
+        // Instantiate the XmlImportService and process the XML file
+        $xmlImportService = new XmlImportService();
+        $xmlImportService->processXml($xmlFilePath, $mapping);
+
+        // Optionally: Add a success message or handle redirection here
+    }
+
+    // Further existing logic of postProcess()
         } elseif ($filename = Tools::getValue('csvfilename')) {
             $filename = urldecode($filename);
             $file = AdminImportController::getPath(basename($filename));
