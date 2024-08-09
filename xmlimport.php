@@ -1,4 +1,5 @@
 <?php
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -16,19 +17,20 @@ class XmlImport extends Module
         parent::__construct();
 
         $this->displayName = $this->l('XML Import');
-        $this->description = $this->l('This module imports data from XML files.');
+        $this->description = $this->l('Import products via XML feed.');
 
-        $this->ps_versions_compliancy = array('min' => '1.7.0.0', 'max' => _PS_VERSION_);
+        $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
     }
 
     public function install()
     {
-        return parent::install();
+        return parent::install() &&
+            $this->registerHook('actionAdminControllerSetMedia');
     }
 
-    public function uninstall()
+    public function hookActionAdminControllerSetMedia()
     {
-        return parent::uninstall();
+        $this->context->controller->addCSS($this->_path.'views/css/xmlimport.css');
+        $this->context->controller->addJS($this->_path.'views/js/xmlimport.js');
     }
 }
-?>
