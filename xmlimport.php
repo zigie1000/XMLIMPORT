@@ -11,7 +11,7 @@ class XmlImport extends Module
         $this->name = 'xmlimport';
         $this->tab = 'administration';
         $this->version = '1.0.0';
-        $this->author = 'Your Name';
+        $this->author = 'Marco Zagato';
         $this->need_instance = 0;
 
         parent::__construct();
@@ -28,8 +28,14 @@ class XmlImport extends Module
             $this->registerHook('actionAdminControllerSetMedia');
     }
 
+    public function uninstall()
+    {
+        return parent::uninstall();
+    }
+
     public function hookActionAdminControllerSetMedia()
     {
+        // Add CSS and JS files for the back office
         $this->context->controller->addCSS($this->_path.'views/css/xmlimport.css');
         $this->context->controller->addJS($this->_path.'views/js/xmlimport.js');
     }
