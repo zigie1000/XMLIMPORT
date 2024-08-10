@@ -580,9 +580,9 @@ class AdminXmlImportControllerCore extends AdminController
      * @throws PrestaShopException
      * @throws SmartyException
      */
-    public function renderForm()
-    {
-	// Add the snippet for XML import templates
+public function renderForm()
+{
+    // Add the snippet for XML import templates
     if (Tools::isSubmit('submitXmlImport')) {
         // Load and display the relevant template based on XML import
         $this->context->smarty->assign([
@@ -593,137 +593,180 @@ class AdminXmlImportControllerCore extends AdminController
 
         return $this->context->smarty->fetch($this->template_dir . 'xml_import.tpl');
     }
-        // If import was executed - collect errors or success message
-        // and send them to the migrated controller.
-        if ($this->importExecuted) {
-            $session = $this->getSession();
 
-            if ($this->errors) {
-                foreach ($this->errors as $error) {
-                    $session->getFlashBag()->add('error', $error);
-                }
-            } else {
-                foreach ($this->warnings as $warning) {
-                    $session->getFlashBag()->add('warning', $warning);
-                }
+    // Add the snippet for XML field mapping template
+    if (Tools::isSubmit('submitXmlFieldMapping')) {
+        // Load and display the relevant template for field mapping
+        $this->context->smarty->assign([
+            'fields_mapping' => $this->getFieldsMapping(),
+            'mapping_data' => $this->getMappingData(),
+        ]);
 
-                $session->getFlashBag()->add(
-                    'success',
-                    $this->trans(
-                        'Your file has been successfully imported into your shop. Don\'t forget to re-build the products\' search index.',
-                        [],
-                        'Admin.Advparameters.Notification'
-                    )
-                );
+        return $this->context->smarty->fetch($this->template_dir . 'xml_field_mapping.tpl');
+    }
+
+    // Add the snippet for XML import result template
+    if (Tools::isSubmit('submitXmlImportResult')) {
+        // Load and display the relevant template for import results
+        $this->context->smarty->assign([
+            'import_results' => $this->getImportResults(),
+        ]);
+
+        return $this->context->smarty->fetch($this->template_dir . 'xml_import_result.tpl');
+    }
+
+    // Add the snippet for XML import options template
+    if (Tools::isSubmit('submitXmlImportOptions')) {
+        // Load and display the relevant template for import options
+        $this->context->smarty->assign([
+            'import_options' => $this->getImportOptions(),
+        ]);
+
+        return $this->context->smarty->fetch($this->template_dir . 'xml_import_options.tpl');
+    }
+
+    // Add the snippet for managing XML import templates
+    if (Tools::isSubmit('submitXmlManageTemplate')) {
+        // Load and display the relevant template for managing templates
+        $this->context->smarty->assign([
+            'template_list' => $this->getTemplateList(),
+        ]);
+
+        return $this->context->smarty->fetch($this->template_dir . 'xml_import_manage_template.tpl');
+    }
+
+    // If import was executed - collect errors or success messages
+    // and send them to the migrated controller.
+    if ($this->importExecuted) {
+        $session = $this->getSession();
+
+        if ($this->errors) {
+            foreach ($this->errors as $error) {
+                $session->getFlashBag()->add('error', $error);
             }
-        }
-
-        $request = $this->getSymfonyRequest();
-
-        if ($request && $request->isMethod(Symfony\Component\HttpFoundation\Request::METHOD_GET)) {
-            // Import form is reworked in Symfony.
-            // If user tries to access legacy form directly,
-            // we redirect him to new form.
-            $symfonyImportForm = $this->context->link->getAdminLink('AdminImport');
-            Tools::redirectAdmin($symfonyImportForm);
-        }
-
-        if (!is_dir(AdminImportController::getPath())) {
-            return !($this->errors[] = $this->trans('The import directory doesn\'t exist. Please check your file path.', [], 'Admin.Advparameters.Notification'));
-        }
-
-        if (!is_writable(AdminImportController::getPath())) {
-            $this->displayWarning($this->trans('The import directory must be writable (CHMOD 755 / 777).', [], 'Admin.Advparameters.Notification'));
-        }
-
-        $files_to_import = scandir(AdminImportController::getPath(), SCANDIR_SORT_NONE);
-        uasort($files_to_import, ['AdminImportController', 'usortFiles']);
-        foreach ($files_to_import as $k => &$filename) {
-            // exclude .  ..  .svn and index.php and all hidden files
-            if (preg_match('/^\..*|index\.php/i', $filename) || is_dir(AdminImportController::getPath() . $filename)) {
-                unset($files_to_import[$k]);
-            }
-        }
-        unset($filename);
-
-        $this->fields_form = [''];
-
-        $this->toolbar_scroll = false;
-        $this->toolbar_btn = [];
-
-        // adds fancybox
-        $this->addJqueryPlugin(['fancybox']);
-
-        $entity_selected = 0;
-        if (isset($this->entities[$this->trans(Tools::ucfirst(Tools::getValue('import_type')))])) {
-            $entity_selected = $this->entities[$this->trans(Tools::ucfirst(Tools::getValue('import_type')))];
-            $this->context->cookie->entity_selected = (int) $entity_selected;
-        } elseif (isset($this->context->cookie->entity_selected)) {
-            $entity_selected = (int) $this->context->cookie->entity_selected;
-        }
-
-        $csv_selected = '';
-        if (isset($this->context->cookie->csv_selected)
-            && @filemtime(AdminImportController::getPath(
-                urldecode($this->context->cookie->csv_selected)
-            ))) {
-            $csv_selected = urldecode($this->context->cookie->csv_selected);
         } else {
-            $this->context->cookie->csv_selected = $csv_selected;
+            foreach ($this->warnings as $warning) {
+                $session->getFlashBag()->add('warning', $warning);
+            }
+
+            $session->getFlashBag()->add(
+                'success',
+                $this->trans(
+                    'Your file has been successfully imported into your shop. Don\'t forget to re-build the products\' search index.',
+                    [],
+                    'Admin.Advparameters.Notification'
+                )
+            );
         }
+    }
 
-        $id_lang_selected = '';
-        if (isset($this->context->cookie->iso_lang_selected) && $this->context->cookie->iso_lang_selected) {
-            $id_lang_selected = (int) Language::getIdByIso(urldecode($this->context->cookie->iso_lang_selected));
+    $request = $this->getSymfonyRequest();
+
+    if ($request && $request->isMethod(Symfony\Component\HttpFoundation\Request::METHOD_GET)) {
+        // Import form is reworked in Symfony.
+        // If user tries to access legacy form directly,
+        // we redirect him to the new form.
+        $symfonyImportForm = $this->context->link->getAdminLink('AdminImport');
+        Tools::redirectAdmin($symfonyImportForm);
+    }
+
+    if (!is_dir(AdminImportController::getPath())) {
+        return !($this->errors[] = $this->trans('The import directory doesn\'t exist. Please check your file path.', [], 'Admin.Advparameters.Notification'));
+    }
+
+    if (!is_writable(AdminImportController::getPath())) {
+        $this->displayWarning($this->trans('The import directory must be writable (CHMOD 755 / 777).', [], 'Admin.Advparameters.Notification'));
+    }
+
+    $files_to_import = scandir(AdminImportController::getPath(), SCANDIR_SORT_NONE);
+    uasort($files_to_import, ['AdminImportController', 'usortFiles']);
+    foreach ($files_to_import as $k => &$filename) {
+        // exclude .  ..  .svn and index.php and all hidden files
+        if (preg_match('/^\..*|index\.php/i', $filename) || is_dir(AdminImportController::getPath() . $filename)) {
+            unset($files_to_import[$k]);
         }
+    }
+    unset($filename);
 
-        $separator_selected = $this->separator;
-        if (isset($this->context->cookie->separator_selected) && $this->context->cookie->separator_selected) {
-            $separator_selected = urldecode($this->context->cookie->separator_selected);
-        }
+    $this->fields_form = [''];
 
-        $multiple_value_separator_selected = $this->multiple_value_separator;
-        if (isset($this->context->cookie->multiple_value_separator_selected) && $this->context->cookie->multiple_value_separator_selected) {
-            $multiple_value_separator_selected = urldecode($this->context->cookie->multiple_value_separator_selected);
-        }
+    $this->toolbar_scroll = false;
+    $this->toolbar_btn = [];
 
-        // get post max size
-        $post_max_size = ini_get('post_max_size');
-        $bytes = (int) trim($post_max_size);
-        $last = strtolower($post_max_size[strlen($post_max_size) - 1]);
+    // adds fancybox
+    $this->addJqueryPlugin(['fancybox']);
 
-        switch ($last) {
-            case 'g':
-                $bytes *= 1024;
-                // no break to fall-through
-            case 'm':
-                $bytes *= 1024;
-                // no break to fall-through
-            case 'k':
-                $bytes *= 1024;
-        }
+    $entity_selected = 0;
+    if (isset($this->entities[$this->trans(Tools::ucfirst(Tools::getValue('import_type')))])) {
+        $entity_selected = $this->entities[$this->trans(Tools::ucfirst(Tools::getValue('import_type')))];
+        $this->context->cookie->entity_selected = (int) $entity_selected;
+    } elseif (isset($this->context->cookie->entity_selected)) {
+        $entity_selected = (int) $this->context->cookie->entity_selected;
+    }
 
-        if ($bytes == '') {
-            $bytes = 20971520;
-        } // 20Mb
+    $csv_selected = '';
+    if (isset($this->context->cookie->csv_selected)
+        && @filemtime(AdminImportController::getPath(
+            urldecode($this->context->cookie->csv_selected)
+        ))) {
+        $csv_selected = urldecode($this->context->cookie->csv_selected);
+    } else {
+        $this->context->cookie->csv_selected = $csv_selected;
+    }
 
-        $this->tpl_form_vars = [
-            'post_max_size' => (int) $bytes,
-            'module_confirmation' => Tools::isSubmit('import') && !count($this->warnings),
-            'path_import' => AdminImportController::getPath(),
-            'entities' => $this->entities,
-            'entity_selected' => $entity_selected,
-            'csv_selected' => $csv_selected,
-            'separator_selected' => $separator_selected,
-            'multiple_value_separator_selected' => $multiple_value_separator_selected,
-            'files_to_import' => $files_to_import,
-            'languages' => Language::getLanguages(false),
-            'id_language' => ($id_lang_selected) ? $id_lang_selected : $this->context->language->id,
-            'available_fields' => $this->getAvailableFields(),
-            'truncateAuthorized' => (Shop::isFeatureActive() && $this->context->employee->isSuperAdmin()) || !Shop::isFeatureActive(),
-        ];
+    $id_lang_selected = '';
+    if (isset($this->context->cookie->iso_lang_selected) && $this->context->cookie->iso_lang_selected) {
+        $id_lang_selected = (int) Language::getIdByIso(urldecode($this->context->cookie->iso_lang_selected));
+    }
 
-        return parent::renderForm();
+    $separator_selected = $this->separator;
+    if (isset($this->context->cookie->separator_selected) && $this->context->cookie->separator_selected) {
+        $separator_selected = urldecode($this->context->cookie->separator_selected);
+    }
+
+    $multiple_value_separator_selected = $this->multiple_value_separator;
+    if (isset($this->context->cookie->multiple_value_separator_selected) && $this->context->cookie->multiple_value_separator_selected) {
+        $multiple_value_separator_selected = urldecode($this->context->cookie->multiple_value_separator_selected);
+    }
+
+    // get post max size
+    $post_max_size = ini_get('post_max_size');
+    $bytes = (int) trim($post_max_size);
+    $last = strtolower($post_max_size[strlen($post_max_size) - 1]);
+
+    switch ($last) {
+        case 'g':
+            $bytes *= 1024;
+            // no break to fall-through
+        case 'm':
+            $bytes *= 1024;
+            // no break to fall-through
+        case 'k':
+            $bytes *= 1024;
+    }
+
+    if ($bytes == '') {
+        $bytes = 20971520;
+    } // 20Mb
+
+    $this->tpl_form_vars = [
+        'post_max_size' => (int) $bytes,
+        'module_confirmation' => Tools::isSubmit('import') && !count($this->warnings),
+        'path_import' => AdminImportController::getPath(),
+        'entities' => $this->entities,
+        'entity_selected' => $entity_selected,
+        'csv_selected' => $csv_selected,
+        'separator_selected' => $separator_selected,
+        'multiple_value_separator_selected' => $multiple_value_separator_selected,
+        'files_to_import' => $files_to_import,
+        'languages' => Language::getLanguages(false),
+        'id_language' => ($id_lang_selected) ? $id_lang_selected : $this->context->language->id,
+        'available_fields' => $this->getAvailableFields(),
+        'truncateAuthorized' => (Shop::isFeatureActive() && $this->context->employee->isSuperAdmin()) || !Shop::isFeatureActive(),
+    ];
+
+    return parent::renderForm();
+}
     }
 
     public function ajaxProcessuploadXml()
