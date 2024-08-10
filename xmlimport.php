@@ -35,8 +35,16 @@ class XmlImport extends Module
 
     public function hookActionAdminControllerSetMedia()
     {
-        // Add CSS and JS files for the back office
         $this->context->controller->addCSS($this->_path.'views/css/xmlimport.css');
         $this->context->controller->addJS($this->_path.'views/js/xmlimport.js');
+    }
+
+    public function getContent()
+    {
+        // Generate the URL for the configuration page
+        $configLink = $this->context->link->getAdminLink('AdminXmlImport');
+
+        // Redirect to the configuration page
+        Tools::redirectAdmin($configLink);
     }
 }
